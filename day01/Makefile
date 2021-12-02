@@ -1,14 +1,14 @@
 CFLAGS = -Wall -Werror
 
-all: day1-1 day1-2
+all: day01a day01b
 
-test: test.txt day1-1 day1-2
-	./day1-1 $<
-	./day1-2 $<
+test: day01a day01b
+	./day01a test
+	./day01b test
 
-solve: input.txt day1-1 day1-2
-	./day1-1 $<
-	./day1-2 $<
+solve: day01a day01b
+	./day01a input
+	./day01b input
 
 clean:
-	rm -f day1-1 day1-2
+	rm -f day01a day01b
