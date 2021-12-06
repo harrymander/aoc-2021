@@ -1,44 +1,32 @@
-use std::env;
-use std::fs;
-use std::process;
-
-
-const NEW_FISH_LIVES: u8 = 8;
-const REGEN_LIVES: u8 = 6;
-const DEFAULT_NUM_DAYS: u32 = 80;
-
+const NEW_FISH_LIVES: usize = 8;
+const REGEN_LIVES: usize = 6;
+const NUM_DAYS: usize = 256;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
-        process::exit(1);
+        std::process::exit(1);
     }
 
-    let num_days = if args.len() > 2 {
-        args[2].parse().unwrap_or(DEFAULT_NUM_DAYS)
-    } else { DEFAULT_NUM_DAYS };
+    let fish_file = std::fs::read_to_string(&args[1])
+        .expect("Cannot open file");
 
-    let fish_file = fs::read_to_string(&args[1]).expect("Cannot open file");
-
-    let mut fishes: Vec<u8> = fish_file.trim().split(",")
+    let fishes: Vec<u8> = fish_file.trim().split(",")
         .map(|n| n.parse().unwrap()).collect();
 
-    for _ in 0..num_days {
-        let mut new_fish = 0usize;
-        for fish in &mut fishes {
-            if *fish == 0 {
-                *fish = REGEN_LIVES;
-                new_fish += 1;
-            } else {
-                *fish -= 1;
-            }
-        }
-
-        if new_fish > 0 {
-            fishes.extend(vec![NEW_FISH_LIVES; new_fish]);
-        }
+    let mut populations = vec![0usize; 1 + NEW_FISH_LIVES as usize];
+    for fish in fishes.iter() {
+        populations[*fish as usize] += 1;
     }
 
-    println!("After {} day(s), there are {} fish remaining",
-             num_days, fishes.len());
+    let mut total_pop = fishes.len();
+    for day in 1..=NUM_DAYS {
+        populations.rotate_left(1);
+        populations[REGEN_LIVES] += populations[NEW_FISH_LIVES];
+        total_pop += populations[NEW_FISH_LIVES];
+
+        if day == 80 || day == NUM_DAYS {
+            println!("After {} day(s) there are {} fish", day, total_pop);
+        }
+    }
 }
