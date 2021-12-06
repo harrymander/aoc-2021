@@ -60,10 +60,8 @@ fn main() {
     let lines: Vec<Line> = lines_file.lines()
         .map(Line::from_string).collect();
 
-    let max_x: usize = lines.iter().map(|l| max(l.x1, l.x2))
-        .max().unwrap();
-    let max_y: usize = lines.iter().map(|l| max(l.y1, l.y2))
-        .max().unwrap();
+    let max_x: usize = lines.iter().map(|l| max(l.x1, l.x2)).max().unwrap();
+    let max_y: usize = lines.iter().map(|l| max(l.y1, l.y2)).max().unwrap();
 
     let mut grid = vec![vec![0usize; max_x + 1]; max_y + 1];
 
@@ -76,26 +74,27 @@ fn main() {
             }
         });
 
-    println!("Horizontal and vertical lines only: {}",
+    println!("(a) Horizontal and vertical lines only: {}",
              count_overlaps(&grid));
 
     lines.iter().filter(|l| l.diag)
         .for_each(|line| {
-            println!("{:?}", line);
-            for (i, row) in (line.y1..=line.y2).enumerate() {
-                grid[row][line.x1 + i] += 1;
+            let cols: Vec<usize> = if line.x2 > line.x1 {
+                (line.x1..=line.x2).collect()
+            } else {
+                (line.x2..=line.x1).rev().collect()
+            };
+
+            let rows: Vec<usize> = if line.y2 > line.y1 {
+                (line.y1..=line.y2).collect()
+            } else {
+                (line.y2..=line.y1).rev().collect()
+            };
+
+            for i in 0..rows.len() {
+                grid[rows[i]][cols[i]] += 1;
             }
         });
 
-    for row in grid.iter() {
-        let row_str: String = row.iter()
-            .map(|x| match x {
-                0 => ".".to_string(),
-                _ => x.to_string()
-            }).collect();
-        println!("{}", row_str);
-    }
-
-    println!("All lines: {}",
-             count_overlaps(&grid));
+    println!("(b) All lines (including diagonal): {}", count_overlaps(&grid));
 }
