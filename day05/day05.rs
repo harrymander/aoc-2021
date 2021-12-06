@@ -15,11 +15,37 @@ fn count_overlaps(grid: &Vec<Vec<usize>>) -> usize {
         .sum()
 }
 
+#[derive(Debug)]
 struct Line {
     x1: usize,
     y1: usize,
     x2: usize,
     y2: usize,
+    diag: bool,
+}
+
+impl Line {
+    pub fn from_string(string: &str) -> Self {
+        let mut coords = string.split(" -> ")
+            .map(|coord| coord_from_string(coord));
+
+        let start = coords.next().unwrap();
+        let end = coords.next().unwrap();
+
+        let (x1, y1) = (start.0, start.1);
+        let (x2, y2) = (end.0, end.1);
+
+        let xmax = max(x1, x2);
+        let xmin = min(x1, x2);
+        let ymin = min(y1, y2);
+        let ymax = max(y1, y2);
+
+        if x1 == x2 || y1 == y2 {
+            Self { x1: xmin, y1: ymin, x2: xmax, y2: ymax, diag: false}
+        } else {
+            Self { x1, y1, x2, y2, diag: true }
+        }
+    }
 }
 
 fn main() {
@@ -31,40 +57,45 @@ fn main() {
     let lines_file = fs::read_to_string(&args[1])
         .expect("Cannot open file");
 
-    let mut max_x = 0usize;
-    let mut max_y = 0usize;
     let lines: Vec<Line> = lines_file.lines()
-        .map(|line| {
-            let mut coords = line.split(" -> ")
-                .map(|coord| coord_from_string(coord));
+        .map(Line::from_string).collect();
 
-            let start = coords.next().unwrap();
-            let end = coords.next().unwrap();
+    let max_x: usize = lines.iter().map(|l| max(l.x1, l.x2))
+        .max().unwrap();
+    let max_y: usize = lines.iter().map(|l| max(l.y1, l.y2))
+        .max().unwrap();
 
-            let xmax = max(start.0, end.0);
-            let xmin = min(start.0, end.0);
-            let ymin = min(start.1, end.1);
-            let ymax = max(start.1, end.1);
+    let mut grid = vec![vec![0usize; max_x + 1]; max_y + 1];
 
-            max_x = max(max_x, xmax);
-            max_y = max(max_y, ymax);
-
-            Line { x1: xmin, y1: ymin, x2: xmax, y2: ymax }
-        }).collect();
-
-    let hor_ver_lines: Vec<&Line> = lines.iter()
-        .filter(|&l| (l.x1 == l.x2) || (l.y1 == l.y2))
-        .collect();
-
-    let mut grid_hor_ver = vec![vec![0usize; max_x + 1]; max_y + 1];
-    for line in hor_ver_lines {
-        for row in line.y1..=line.y2 {
-            for col in line.x1..=line.x2 {
-                grid_hor_ver[row][col] += 1;
+    lines.iter().filter(|l| !l.diag)
+        .for_each(|line| {
+            for row in line.y1..=line.y2 {
+                for col in line.x1..=line.x2 {
+                    grid[row][col] += 1;
+                }
             }
-        }
-    }
+        });
 
     println!("Horizontal and vertical lines only: {}",
-             count_overlaps(&grid_hor_ver));
+             count_overlaps(&grid));
+
+    lines.iter().filter(|l| l.diag)
+        .for_each(|line| {
+            println!("{:?}", line);
+            for (i, row) in (line.y1..=line.y2).enumerate() {
+                grid[row][line.x1 + i] += 1;
+            }
+        });
+
+    for row in grid.iter() {
+        let row_str: String = row.iter()
+            .map(|x| match x {
+                0 => ".".to_string(),
+                _ => x.to_string()
+            }).collect();
+        println!("{}", row_str);
+    }
+
+    println!("All lines: {}",
+             count_overlaps(&grid));
 }
