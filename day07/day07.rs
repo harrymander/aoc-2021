@@ -13,15 +13,28 @@ fn main() {
         .collect();
     let max_position = *crabs.iter().max().unwrap();
 
-    let min_fuel_linear = (0..=max_position)
+    let steps_per_position: Vec<Vec<u32>> = (0..=max_position)
         .map(|target_position| {
             crabs
                 .iter()
                 .map(|&pos| (pos as i32 - target_position as i32).abs() as u32)
-                .sum::<u32>()
+                .collect()
         })
+        .collect();
+
+    let min_fuel_linear: u32 = steps_per_position
+        .iter()
+        .map(|steps| steps.iter().sum())
         .min()
         .unwrap();
 
-    println!("{:?}", min_fuel_linear);
+    println!("{}", min_fuel_linear);
+
+    let min_fuel_increasing: u32 = steps_per_position
+        .iter()
+        .map(|steps| steps.iter().map(|&pos| pos * (pos + 1) / 2).sum())
+        .min()
+        .unwrap();
+
+    println!("{}", min_fuel_increasing);
 }
