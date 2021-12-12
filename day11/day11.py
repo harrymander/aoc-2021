@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import itertools
 import sys
 
 import numpy as np
@@ -11,29 +12,13 @@ PRINT_STEPS = 100
 
 def flash_octos(octos, flashed):
     num_flashed = 0
-
-    for irow in range(octos.shape[0]):
-        for icol in range(octos.shape[1]):
-            has_flashed = flashed[irow][icol]
-            energy_level = octos[irow][icol]
-
-            if not has_flashed and energy_level >= MIN_FLASH_LEVEL:
-                flashed[irow][icol] = True
-                num_flashed += 1
-
-                for i, j in (
-                    (irow - 1, icol),
-                    (irow + 1, icol),
-                    (irow,     icol - 1),
-                    (irow,     icol + 1),
-                    (irow + 1, icol + 1),
-                    (irow - 1, icol + 1),
-                    (irow + 1, icol - 1),
-                    (irow - 1, icol - 1),
-                ):
-                    if (i in range(octos.shape[0])
-                            and j in range(octos.shape[1])):
-                        octos[i][j] += 1
+    rows, cols = octos.shape
+    for irow, icol in itertools.product(range(rows), range(cols)):
+        if not flashed[irow][icol] and octos[irow][icol] >= MIN_FLASH_LEVEL:
+            flashed[irow][icol] = True
+            num_flashed += 1
+            octos[max(0, irow - 1):min(rows, irow + 2),
+                  max(0, icol - 1):min(cols, icol + 2)] += 1
 
     if num_flashed:
         return num_flashed + flash_octos(octos, flashed)
@@ -42,18 +27,10 @@ def flash_octos(octos, flashed):
 
 
 def step_octos(octos):
-    for i in range(octos.shape[0]):
-        for j in range(octos.shape[1]):
-            octos[i][j] += 1
-
+    octos += 1
     flashed = np.zeros((octos.shape[0], octos.shape[1]), dtype=bool)
     num_flashed = flash_octos(octos, flashed)
-
-    for row in range(octos.shape[0]):
-        for col in range(octos.shape[1]):
-            if flashed[row][col]:
-                octos[row][col] = 0
-
+    octos[flashed] = 0
     return num_flashed
 
 
@@ -64,9 +41,9 @@ if __name__ == '__main__':
         ])
 
     num_flashed = sum(step_octos(octos) for _ in range(PRINT_STEPS))
-    print(num_flashed)
+    print(f'Number of flashes after {PRINT_STEPS} steps:', num_flashed)
 
     steps = PRINT_STEPS
     while step_octos(octos) != octos.size:
         steps += 1
-    print(steps + 1)
+    print('All flashed simultaneously on step', steps + 1)
