@@ -3,7 +3,7 @@
 import sys
 
 
-def num_routes(node, graph, visited=set()):
+def num_routes(node, graph, visited=set(), revisit_small=False):
     if node == 'end':
         return 1
     elif node.islower():
@@ -12,7 +12,9 @@ def num_routes(node, graph, visited=set()):
     count = 0
     for next_node in graph[node]:
         if next_node not in visited:
-            count += num_routes(next_node, graph, visited)
+            count += num_routes(next_node, graph, visited, revisit_small)
+        elif revisit_small:
+            count += num_routes(next_node, graph, visited, False)
 
     return count
 
@@ -29,4 +31,5 @@ if __name__ == '__main__':
                     if other != 'start':
                         graph.setdefault(cave, []).append(other)
 
-    print(num_routes('start', graph))
+    print(num_routes('start', graph, revisit_small=False))
+    print(num_routes('start', graph, revisit_small=True))
