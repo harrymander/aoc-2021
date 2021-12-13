@@ -49,4 +49,4 @@ if __name__ == '__main__':
         paper = fold_paper(paper, fold)
 
     for row in paper:
-        print(''.join('#' if dot else ' ' for dot in row))
+        print(''.join('█' if dot else ' ' for dot in row))
