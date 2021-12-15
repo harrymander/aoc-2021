@@ -5,23 +5,10 @@ from math import inf
 import sys
 
 
-def print_visited(visited):
-    for row in visited:
-        print(''.join(str(int(i)) for i in row))
-
-
-def print_distances(distances):
-    for row in distances:
-        print(' '.join(f'{i:02}' if i < inf else '??' for i in row))
-
-
-def main():
-    with open(sys.argv[1]) as f:
-        cavern = [list(map(int, line.strip())) for line in f.readlines()]
-
+def find_least_risky_path_score(cavern):
     rows, cols = len(cavern), len(cavern[0])
-    distances = [[inf] * cols for _ in range(rows)]
-    distances[0][0] = 0
+    risks = [[inf] * cols for _ in range(rows)]
+    risks[0][0] = 0
     loc = (0, 0)
 
     unvisited = set(itertools.product(range(rows), range(cols)))
@@ -42,13 +29,38 @@ def main():
         for to_loc in neighbours:
             if to_loc in unvisited:
                 to_row, to_col = to_loc
-                new_distance = distances[row][col] + cavern[to_row][to_col]
-                if new_distance < distances[to_row][to_col]:
-                    distances[to_row][to_col] = new_distance
+                new_risk = risks[row][col] + cavern[to_row][to_col]
+                if new_risk < risks[to_row][to_col]:
+                    risks[to_row][to_col] = new_risk
 
-        loc = min(unvisited, key=lambda l: distances[l[0]][l[1]])
+        loc = min(unvisited, key=lambda l: risks[l[0]][l[1]])
 
-    print(distances[rows - 1][cols - 1])
+    return risks[rows - 1][cols - 1]
+
+
+def main():
+    with open(sys.argv[1]) as f:
+        small_cavern = [list(map(int, line.strip())) for line in f.readlines()]
+
+    print(find_least_risky_path_score(small_cavern))
+
+    wide_cavern = []
+    for row in small_cavern:
+        new_row = row.copy()
+        for extra in range(4):
+            new_row.extend([((i + extra + 1) % 9) or 9 for i in row])
+        wide_cavern.append(new_row)
+
+    cavern = wide_cavern.copy()
+    for row in wide_cavern:
+        for extra in range(4):
+            cavern.append([((i + extra + 1) % 9) or 9 for i in row])
+
+    for i, row in enumerate(cavern):
+        print(''.join(str(int(i)) for i in row))
+
+    print(len(cavern), len(cavern[0]))
+    print(find_least_risky_path_score(cavern))
 
 
 if __name__ == '__main__':
