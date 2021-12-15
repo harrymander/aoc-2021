@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
 
-import itertools
+from heapq import heappop, heappush
 from math import inf
 import sys
 
 
 def find_least_risky_path_score(cavern):
+    """
+    Dijkstra's algorithm
+    """
+
     rows, cols = len(cavern), len(cavern[0])
     risks = [[inf] * cols for _ in range(rows)]
     risks[0][0] = 0
     loc = (0, 0)
 
-    unvisited = set(itertools.product(range(rows), range(cols)))
-    while loc != (rows - 1, cols - 1):
+    queue = [(0, loc)]
+    visited = set()
+    while True:
+        current_risk, loc = heappop(queue)
+        if loc == (rows - 1, cols - 1):
+            return current_risk
+
         row, col = loc
-        unvisited.remove(loc)
+        visited.add(loc)
 
         neighbours = []
         if row - 1 > 0:
@@ -26,16 +35,12 @@ def find_least_risky_path_score(cavern):
         if col + 1 < cols:
             neighbours.append((row, col + 1))
 
-        for to_loc in neighbours:
-            if to_loc in unvisited:
-                to_row, to_col = to_loc
-                new_risk = risks[row][col] + cavern[to_row][to_col]
-                if new_risk < risks[to_row][to_col]:
-                    risks[to_row][to_col] = new_risk
-
-        loc = min(unvisited, key=lambda l: risks[l[0]][l[1]])
-
-    return risks[rows - 1][cols - 1]
+        for to_loc in (n for n in neighbours if n not in visited):
+            to_row, to_col = to_loc
+            new_risk = current_risk + cavern[to_row][to_col]
+            if new_risk < risks[to_row][to_col]:
+                risks[to_row][to_col] = new_risk
+                heappush(queue, (new_risk, to_loc))
 
 
 def main():
@@ -44,17 +49,15 @@ def main():
 
     print(find_least_risky_path_score(small_cavern))
 
-    wide_cavern = []
-    for row in small_cavern:
-        new_row = row.copy()
-        for extra in range(4):
-            new_row.extend([((i + extra + 1) % 9) or 9 for i in row])
-        wide_cavern.append(new_row)
+    cavern = [row.copy() for row in small_cavern]
+    for row, original_row in zip(cavern, small_cavern):
+        for extra in range(1, 5):
+            row.extend([(i + extra) % 9 or 9 for i in original_row])
 
-    cavern = wide_cavern.copy()
-    for extra in range(4):
-        for row in wide_cavern:
-            cavern.append([((i + extra + 1) % 9) or 9 for i in row])
+    rows = cavern.copy()
+    for extra in range(1, 5):
+        for row in rows:
+            cavern.append([(i + extra) % 9 or 9 for i in row])
 
     print(find_least_risky_path_score(cavern))
 
