@@ -52,14 +52,10 @@ def main():
         wide_cavern.append(new_row)
 
     cavern = wide_cavern.copy()
-    for row in wide_cavern:
-        for extra in range(4):
+    for extra in range(4):
+        for row in wide_cavern:
             cavern.append([((i + extra + 1) % 9) or 9 for i in row])
 
-    for i, row in enumerate(cavern):
-        print(''.join(str(int(i)) for i in row))
-
-    print(len(cavern), len(cavern[0]))
     print(find_least_risky_path_score(cavern))
 
 
