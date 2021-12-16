@@ -47,10 +47,7 @@ class Packet(object):
             if self.typeid == 0:
                 self.value = sum(self.subpacket_values())
             elif self.typeid == 1:
-                if len(self.subpackets) == 1:
-                    self.value = self.subpackets[0].value
-                else:
-                    self.value = math.prod(self.subpacket_values())
+                self.value = math.prod(self.subpacket_values())
             elif self.typeid == 2:
                 self.value = min(self.subpacket_values())
             elif self.typeid == 3:
