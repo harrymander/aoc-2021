@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 import sys
 
 
@@ -12,7 +13,6 @@ class Packet(object):
         self.typeid = self.next_int(3)
 
         self.subpackets = []
-        self.literal = None
 
         if self.typeid == 4:
             payload = []
@@ -22,7 +22,7 @@ class Packet(object):
                 if bits[0] == '0':
                     break
 
-            self.literal = int(''.join(payload), 2)
+            self.value = int(''.join(payload), 2)
         else:
             length_type = self.next()
             if length_type == '0':
@@ -44,6 +44,30 @@ class Packet(object):
                 self._datastream = payload
                 self._ptr = 0
 
+            if self.typeid == 0:
+                self.value = sum(self.subpacket_values())
+            elif self.typeid == 1:
+                if len(self.subpackets) == 1:
+                    self.value = self.subpackets[0].value
+                else:
+                    self.value = math.prod(self.subpacket_values())
+            elif self.typeid == 2:
+                self.value = min(self.subpacket_values())
+            elif self.typeid == 3:
+                self.value = max(self.subpacket_values())
+            elif self.typeid == 5:
+                self.value = int(self.subpackets[0].value
+                                 > self.subpackets[1].value)
+            elif self.typeid == 6:
+                self.value = int(self.subpackets[0].value
+                                 < self.subpackets[1].value)
+            else:
+                self.value = int(self.subpackets[0].value
+                                 == self.subpackets[1].value)
+
+    def subpacket_values(self):
+        return (p.value for p in self.subpackets)
+
     def all_subpackets(self):
         subpackets = []
         for subpacket in self.subpackets:
@@ -54,7 +78,7 @@ class Packet(object):
     def pprint(self, level=0):
         print(' ' * (4 * level) +
               f'Version={self.version}, Type={self.typeid}, '
-              f'Literal={self.literal or "None"}')
+              f'Value={self.value or "None"}')
         for subpacket in self.subpackets:
             subpacket.pprint(level + 1)
 
@@ -71,7 +95,7 @@ class Packet(object):
 
     def __repr__(self):
         return (f'Packet(version={self.version}, type={self.typeid}, '
-                f'literal={self.literal or "None"}, '
+                f'value={self.value or "None"}, '
                 f'{len(self.subpackets)} subpacket(s)')
 
 
@@ -81,8 +105,9 @@ def main():
 
     packet = Packet(datastream)
 
-    print(packet.version +
+    print('Sum of packet versions:', packet.version +
           sum(p.version for p in packet.all_subpackets()))
+    print('Packet value:', packet.value)
 
 
 if __name__ == '__main__':
