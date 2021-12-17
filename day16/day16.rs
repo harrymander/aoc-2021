@@ -7,18 +7,16 @@ struct Packet {
 }
 
 impl Packet {
-    pub fn from_bitstream(bitstream: &mut &str) -> Self {
-        let version = u8::from_str_radix(&bitstream[..3], 2).unwrap();
-        let typeid = u8::from_str_radix(&bitstream[3..6], 2).unwrap();
-        let mut subpackets = Vec::new();
+    pub fn from_bitstream(bits: &mut String) -> Self {
+        let version = u8::from_str_radix(bits.drain(..3).as_str(), 2).unwrap();
+        let typeid = u8::from_str_radix(bits.drain(..3).as_str(), 2).unwrap();
 
-        *bitstream = &bitstream[6..];
+        let mut subpackets = Vec::new();
         let value: u64 = if typeid == 4 {
             let mut literal = String::new();
             loop {
-                let cont = bitstream.chars().next().unwrap();
-                literal.push_str(&bitstream[1..5]);
-                *bitstream = &bitstream[5..];
+                let cont = bits.drain(..1).next().unwrap();
+                literal.push_str(bits.drain(..4).as_str());
                 if cont == '0' {
                     break;
                 }
@@ -26,25 +24,18 @@ impl Packet {
 
             u64::from_str_radix(&literal, 2).unwrap()
         } else {
-            let length_type = bitstream.chars().next().unwrap();
-            *bitstream = &bitstream[1..];
-
+            let length_type = bits.drain(..1).next().unwrap();
             if length_type == '0' {
-                let num_bits = usize::from_str_radix(&bitstream[..15], 2).unwrap();
-                *bitstream = &bitstream[15..];
-
-                let mut remaining = &bitstream[..num_bits];
+                let num_bits = usize::from_str_radix(bits.drain(..15).as_str(), 2).unwrap();
+                let mut remaining: String = bits.drain(..num_bits).collect();
                 while !remaining.is_empty() {
                     let subpacket = Packet::from_bitstream(&mut remaining);
                     subpackets.push(subpacket);
                 }
-
-                *bitstream = &bitstream[num_bits..];
             } else {
-                let num_packets = usize::from_str_radix(&bitstream[..11], 2).unwrap();
-                *bitstream = &bitstream[11..];
+                let num_packets = usize::from_str_radix(bits.drain(..11).as_str(), 2).unwrap();
                 for _ in 0..num_packets {
-                    let subpacket = Packet::from_bitstream(bitstream);
+                    let subpacket = Packet::from_bitstream(bits);
                     subpackets.push(subpacket);
                 }
             }
@@ -86,7 +77,7 @@ impl Packet {
             .map(|h| format!("{:04b}", u8::from_str_radix(&h.to_string(), 16).unwrap()))
             .for_each(|bin| bitstream.push_str(&bin));
 
-        Self::from_bitstream(&mut &bitstream[..])
+        Self::from_bitstream(&mut bitstream)
     }
 
     #[allow(dead_code)]
@@ -127,6 +118,6 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let packet = Packet::from_hexstream(std::fs::read_to_string(&args[1]).unwrap().trim());
 
-    println!("Version sum: {}", packet.version_sum);
+    println!("Sum of packet versions: {}", packet.version_sum);
     println!("Packet value: {}", packet.value);
 }
